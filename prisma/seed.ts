@@ -98,121 +98,123 @@ async function main() {
 
   await seedRoles(store.id)
 
-  // Categories
-  const clothing = await prisma.category.upsert({
-    where: { id: "cat-clothing" },
-    update: {},
-    create: { id: "cat-clothing", name: "ROPA", storeId: store.id }
-  })
-
-  const electronics = await prisma.category.upsert({
-    where: { id: "cat-electronics" },
-    update: {},
-    create: { id: "cat-electronics", name: "ELECTRÓNICOS", storeId: store.id }
-  })
-
-  const accessories = await prisma.category.upsert({
-    where: { id: "cat-accessories" },
-    update: {},
-    create: { id: "cat-accessories", name: "ACCESORIOS", storeId: store.id }
-  })
-
-  const food = await prisma.category.upsert({
-    where: { id: "cat-food" },
-    update: {},
-    create: { id: "cat-food", name: "ABARROTES", storeId: store.id }
-  })
-
-  console.log("✅ Categories:", clothing.name, electronics.name, accessories.name, food.name)
-
-  // Subcategories
-  const shirts = await prisma.category.upsert({
-    where: { id: "cat-shirts" },
-    update: {},
-    create: { id: "cat-shirts", name: "CAMISAS", storeId: store.id, parentId: clothing.id }
-  })
-
-  const pants = await prisma.category.upsert({
-    where: { id: "cat-pants" },
-    update: {},
-    create: { id: "cat-pants", name: "PANTALONES", storeId: store.id, parentId: clothing.id }
-  })
-
-  const phones = await prisma.category.upsert({
-    where: { id: "cat-phones" },
-    update: {},
-    create: { id: "cat-phones", name: "CELULARES", storeId: store.id, parentId: electronics.id }
-  })
-
-  console.log("✅ Subcategories:", shirts.name, pants.name, phones.name)
-
-  // Suppliers
-  const supplier1 = await prisma.supplier.upsert({
-    where: { id: "sup-alfa" },
-    update: {},
-    create: { id: "sup-alfa", name: "ALFA DISTRIBUTIONS", email: "alfa@supplier.com", phone: "3001234567", storeId: store.id }
-  })
-
-  const supplier2 = await prisma.supplier.upsert({
-    where: { id: "sup-beta" },
-    update: {},
-    create: { id: "sup-beta", name: "BETA IMPORTADORA", email: "beta@supplier.com", phone: "3007654321", storeId: store.id }
-  })
-
-  console.log("✅ Suppliers:", supplier1.name, supplier2.name)
-
-  // Products
-  const products = [
-    { id: "prod-1", name: "CAMISA MANGA LARGA BLANCA", sku: "CAM-ML-BLA", price: 45000, cost: 25000, stock: 50, categoryId: shirts.id, supplierId: supplier1.id },
-    { id: "prod-2", name: "CAMISA MANGA LARGA NEGRA", sku: "CAM-ML-NEG", price: 45000, cost: 25000, stock: 45, categoryId: shirts.id, supplierId: supplier1.id },
-    { id: "prod-3", name: "CAMISA MANGA CORTA AZUL", sku: "CAM-MC-AZL", price: 40000, cost: 22000, stock: 60, categoryId: shirts.id, supplierId: supplier1.id },
-    { id: "prod-4", name: "PANTALÓN JEANS AZUL", sku: "PAN-JEANS-AZL", price: 80000, cost: 45000, stock: 30, categoryId: pants.id, supplierId: supplier1.id },
-    { id: "prod-5", name: "PANTALÓN JEANS NEGRO", sku: "PAN-JEANS-NEG", price: 80000, cost: 45000, stock: 28, categoryId: pants.id, supplierId: supplier1.id },
-    { id: "prod-6", name: "SHORT JEANS CLARO", sku: "SHT-JEANS-CLR", price: 55000, cost: 30000, stock: 40, categoryId: pants.id, supplierId: supplier1.id },
-    { id: "prod-7", name: "SAMSUNG A14 128GB", sku: "SUM-A14-128", price: 750000, cost: 580000, stock: 15, categoryId: phones.id, supplierId: supplier2.id },
-    { id: "prod-8", name: "SAMSUNG A24 256GB", sku: "SUM-A24-256", price: 950000, cost: 720000, stock: 12, categoryId: phones.id, supplierId: supplier2.id },
-    { id: "prod-9", name: "REDMI NOTE 13", sku: "REDM-N13-256", price: 680000, cost: 520000, stock: 20, categoryId: phones.id, supplierId: supplier2.id },
-    { id: "prod-10", name: "AIRPODS PRO 2", sku: "AIR-PRO2", price: 380000, cost: 280000, stock: 25, categoryId: electronics.id, supplierId: supplier2.id },
-    { id: "prod-11", name: "CARGADOR SAMSUNG 25W", sku: "CAR-SAM-25", price: 85000, cost: 45000, stock: 50, categoryId: electronics.id, supplierId: supplier2.id },
-    { id: "prod-12", name: "CABLE USB-C", sku: "CAB-USBC", price: 35000, cost: 15000, stock: 100, categoryId: electronics.id, supplierId: supplier2.id },
-    { id: "prod-13", name: "CORREO NEGRO PIEL", sku: "COR-NEG-PIL", price: 65000, cost: 35000, stock: 20, categoryId: accessories.id, supplierId: supplier1.id },
-    { id: "prod-14", name: "BILLETERA CAFÉ", sku: "BIL-CAF", price: 45000, cost: 22000, stock: 30, categoryId: accessories.id, supplierId: supplier1.id },
-    { id: "prod-15", name: "GAFAS SOL NEGRAS", sku: "GAF-SOL-NEG", price: 55000, cost: 28000, stock: 25, categoryId: accessories.id, supplierId: supplier1.id },
-    { id: "prod-16", name: "ARROZ DORA 500G", sku: "ARR-DOR-500", price: 5500, cost: 4200, stock: 100, categoryId: food.id, supplierId: supplier1.id },
-    { id: "prod-17", name: "ACEITE GOROO 500ML", sku: "ACE-GOR-500", price: 7500, cost: 5500, stock: 80, categoryId: food.id, supplierId: supplier1.id },
-    { id: "prod-18", name: "AZÚCAR BLANCA 1KG", sku: "AZU-BLA-1K", price: 4500, cost: 3200, stock: 120, categoryId: food.id, supplierId: supplier1.id },
-    { id: "prod-19", name: "SAL MARINA 500G", sku: "SAL-MAR-500", price: 3500, cost: 2000, stock: 90, categoryId: food.id, supplierId: supplier1.id },
-    { id: "prod-20", name: "FIDEOS PREMIUM 250G", sku: "FID-PREM-250", price: 4200, cost: 2800, stock: 70, categoryId: food.id, supplierId: supplier1.id },
+  // Create 10 Categories
+  const categories = [
+    { name: "ROPA HOMBRE", subcategories: ["CAMISAS", "PANTALONES", "SHORTS", "CAMISETAS", "SACOS", "CHAQUETAS"] },
+    { name: "ROPA MUJER", subcategories: ["BLUSAS", "VESTIDOS", "FALDAS", "PANTALONES", "SHORTS", "CAMISETAS"] },
+    { name: "ROPA NIÑOS", subcategories: ["CAMISAS", "PANTALONES", "VESTIDOS", "CAMISETAS", "SHORTS"] },
+    { name: "ELECTRÓNICOS", subcategories: ["CELULARES", "TABLETS", "AURICULARES", "CARGADORES", "CABLES", "PARLANTES", "SMARTWATCH"] },
+    { name: "ACCESORIOS", subcategories: ["BILLETERAS", "CINTURONES", "GAFAS", "BOLSOS", "MOCHILAS", "BUFANDAS"] },
+    { name: "CALZADO", subcategories: ["TENIS", "ZAPATOS", "SANDALIAS", "BOTAS", "ZAPATILLAS"] },
+    { name: "ABARROTES", subcategories: ["ARROZ", "AZÚCAR", "ACEITES", "FIDEOS", "LATAS", "SAL", "CAFÉ", "HARINAS"] },
+    { name: "BELLEZA", subcategories: ["JABONES", "SHAMPOO", "CREMAS", "DESODORANTES", "LOCIONES"] },
+    { name: "DEPORTES", subcategories: ["BALONES", "RAQUETAS", "CAMISETAS", "SHORTS", "TENIS"] },
+    { name: "HOGAR", subcategories: ["ESCOBAS", "TRAPEADORES", "VELAS", "JABONES", "BLQUEADORES"] }
   ]
 
-  for (const prod of products) {
+  const colorOptions = ["BLANCO", "NEGRO", "AZUL", "ROJO", "VERDE", "GRIS", "CAFE", "ROSADO"]
+  const sizeOptions = ["S", "M", "L", "XL", "U"]
+
+  const categoryMap = new Map<string, string>()
+  const subCategoryMap = new Map<string, string>()
+
+  // Create categories and subcategories
+  let catIndex = 0
+  let subCatIndex = 0
+  
+  for (const cat of categories) {
+    const parent = await prisma.category.upsert({
+      where: { id: `cat-${catIndex}` },
+      update: {},
+      create: { id: `cat-${catIndex}`, name: cat.name, storeId: store.id }
+    })
+    categoryMap.set(cat.name, parent.id)
+    
+    for (const subName of cat.subcategories) {
+      const sub = await prisma.category.upsert({
+        where: { id: `sub-${subCatIndex}` },
+        update: {},
+        create: { id: `sub-${subCatIndex}`, name: subName, storeId: store.id, parentId: parent.id }
+      })
+      subCategoryMap.set(subName, sub.id)
+      subCatIndex++
+    }
+    catIndex++
+  }
+  console.log(`✅ Categories: ${categories.length} + ${subCategoryMap.size} subcategories`)
+
+  // Create Suppliers
+  const supplierNames = ["ALFA DISTRIBUTIONS", "BETA IMPORTADORA", "GAMMA CORP", "DELTA PRODUCTS", "EPSILON SA", "ZETA HOLDINGS", "ETA TRADING", "THETA INC", "IOTA LOGISTICS", "KAPPA COMMERCE"]
+  const suppliers = []
+  
+  for (let i = 0; i < supplierNames.length; i++) {
+    const sup = await prisma.supplier.upsert({
+      where: { id: `sup-${i}` },
+      update: {},
+      create: { id: `sup-${i}`, name: supplierNames[i], email: ` supplier${i}@supplier.com`, phone: `300${Math.floor(Math.random() * 9000000 + 1000000)}`, storeId: store.id }
+    })
+    suppliers.push(sup)
+  }
+  console.log(`✅ Suppliers: ${suppliers.length}`)
+
+  // Generate 500 Products
+  const productKeys = Array.from(subCategoryMap.keys())
+  for (let i = 0; i < 500; i++) {
+    const subName = productKeys[i % productKeys.length]
+    const subCatId = subCategoryMap.get(subName)!
+    const color = colorOptions[Math.floor(Math.random() * colorOptions.length)]
+    const size = sizeOptions[Math.floor(Math.random() * sizeOptions.length)]
+    const supplier = suppliers[Math.floor(Math.random() * suppliers.length)]
+    
+    const basePrice = Math.floor(Math.random() * 500000) + 10000
+    const price = Math.round(basePrice / 1000) * 1000
+    const cost = Math.round(price * (0.4 + Math.random() * 0.3))
+    const stock = Math.floor(Math.random() * 95) + 5
+    const taxRates = [0, 5, 19]
+    const taxRate = taxRates[Math.floor(Math.random() * taxRates.length)]
+    
+    let name = `${subName} ${color}`
+    if (Math.random() > 0.5) name = `${name} TALLA ${size}`
+    
+    const regularPrice = price > 60000 ? Math.round(price * (1 + Math.random() * 0.3) / 1000) * 1000 : null
+    
     await prisma.product.upsert({
-      where: { id: prod.id },
-      update: prod,
-      create: { ...prod, storeId: store.id }
+      where: { id: `prod-${i}` },
+      update: {},
+      create: {
+        id: `prod-${i}`,
+        name,
+        sku: `SKU-${String(i+1).padStart(4, '0')}`,
+        price,
+        regularPrice,
+        cost,
+        stock,
+        minStock: Math.floor(Math.random() * 7) + 3,
+        taxRate,
+        taxType: taxRate === 0 ? "EXEMPT" : "TAXED",
+        unitMeasure: "94",
+        categoryId: subCatId,
+        supplierId: supplier.id,
+        storeId: store.id
+      }
     })
   }
+  console.log("✅ Products: 500")
 
-  console.log("✅ Products:", products.length)
-
-  // Customers
-  const customers = [
-    { id: "cust-1", name: "JUAN PEREZ", document: "1001234567", balance: 0, creditLimit: 500000, storeId: store.id },
-    { id: "cust-2", name: "MARÍA GARCÍA", document: "43215678", balance: 150000, creditLimit: 300000, storeId: store.id },
-    { id: "cust-3", name: "PEDRO RODRÍGUEZ", document: "80765432", balance: 0, creditLimit: 1000000, storeId: store.id },
-    { id: "cust-4", name: "LUISA FERNANDEZ", document: "12345678", balance: 85000, creditLimit: 200000, storeId: store.id },
-  ]
-
-  for (const cust of customers) {
+  // Create Customers
+  const customerNames = ["JUAN PEREZ", "MARÍA GARCÍA", "PEDRO RODRÍGUEZ", "LUISA FERNANDEZ", "CARLOS MARTINEZ", "ANA LÓPEZ", "JORGE CASTRO", "LAURA RAMIREZ", "MANUEL TORRES", "SOFIA MORALES"]
+  
+  for (let i = 0; i < customerNames.length; i++) {
     await prisma.customer.upsert({
-      where: { id: cust.id },
-      update: cust,
-      create: cust
+      where: { id: `cust-${i}` },
+      update: {},
+      create: { id: `cust-${i}`, name: customerNames[i], document: String(10000000 + i * 1000000), balance: Math.floor(Math.random() * 500000), creditLimit: Math.floor(Math.random() * 900000 + 100000), storeId: store.id }
     })
   }
+  console.log("✅ Customers: 10")
 
-  console.log("✅ Customers:", customers.length)
   console.log("🎉 Seed completed!")
+  console.log("📊 Summary: 10 categories, 61 subcategories, 500 products, 10 suppliers, 10 customers")
 }
 
 main()
