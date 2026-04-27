@@ -6,7 +6,7 @@ import { createProduct, updateProduct } from "@/actions/products"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 
 export function ProductForm({ storeId, categories = [], suppliers = [], initialData, onSuccess }: { storeId: string, categories?: any[], suppliers?: any[], initialData?: any, onSuccess?: () => void }) {
   const router = useRouter()
@@ -17,15 +17,15 @@ export function ProductForm({ storeId, categories = [], suppliers = [], initialD
       setLoading(true)
       if (initialData?.id) {
         await updateProduct(initialData.id, formData)
-        toast.success("PRODUCTO ACTUALIZADO CON ÉXITO")
+        alert.success("PRODUCTO ACTUALIZADO", "Los cambios fueron guardados correctamente.")
       } else {
         await createProduct(formData)
-        toast.success("PRODUCTO REGISTRADO CON ÉXITO")
+        alert.success("PRODUCTO REGISTRADO", "El artículo fue agregado al inventario.")
       }
       router.refresh()
       if (onSuccess) onSuccess()
     } catch (error) {
-      toast.error(initialData?.id ? "ERROR DEL SISTEMA: NO SE PUDO ACTUALIZAR EL PRODUCTO" : "ERROR DEL SISTEMA: NO SE PUDO REGISTRAR EL PRODUCTO")
+      alert.error("ERROR DEL SISTEMA", "No se pudo procesar la solicitud. Intenta de nuevo.")
     } finally {
       setLoading(false)
     }

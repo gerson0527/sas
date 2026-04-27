@@ -212,3 +212,26 @@ export async function registerPayment(customerId: string, storeId: string, formD
 
   revalidatePath("/customers")
 }
+
+export async function bulkCreateCustomers(storeId: string, customers: any[]) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const validCustomers = customers.map((c) => ({
+    name: c.NOMBRE || c.name || "Sin Nombre",
+    document: c.DOCUMENTO?.toString() || c.document || null,
+    email: c.EMAIL || c.email || null,
+    phone: c.TELEFONO?.toString() || c.phone || null,
+    address: c.DIRECCION || c.address || null,
+    creditLimit: parseFloat(c.LIMITE_CREDITO || c.creditLimit) || 0,
+    balance: parseFloat(c.DEUDA_INICIAL || c.balance) || 0,
+    storeId,
+  }))
+
+  await prisma.customer.createMany({
+    data: validCustomers,
+    skipDuplicates: true
+  })
+
+  revalidatePath("/customers")
+}

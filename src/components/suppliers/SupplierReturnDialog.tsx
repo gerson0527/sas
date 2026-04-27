@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createSupplierReturn } from "@/actions/purchases"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { returnToSupplier } from "@/actions/suppliers"
+import { alert } from "@/lib/alert"
 
 type Product = {
   id: string
@@ -29,7 +29,6 @@ const RETURN_REASONS = [
 ]
 
 export function SupplierReturnDialog({ supplier, products }: { supplier: Supplier, products: Product[] }) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [selectedItems, setSelectedItems] = useState<{ productId: string, quantity: number, reason: string }[]>([])
   const [notes, setNotes] = useState("")
@@ -57,30 +56,26 @@ export function SupplierReturnDialog({ supplier, products }: { supplier: Supplie
   const handleReturn = async () => {
     const itemsToReturn = selectedItems.filter(i => i.quantity > 0 && i.reason)
     if (itemsToReturn.length === 0) {
-      toast.error("Seleccione productos y motivo")
+      alert.error("Seleccione productos y motivo")
       return
     }
 
     setLoading(true)
     try {
-      const items = itemsToReturn.map(i => {
-        const product = products.find(p => p.id === i.productId)
-        return {
-          productId: i.productId,
-          quantity: i.quantity,
-          cost: product?.cost || 0,
-          reason: i.reason
-        }
-      })
-      
-      await createSupplierReturn(supplier.id, items, notes)
-      toast.success("DEVOLUCIÓN REGISTRADA")
-      router.refresh()
+      for (const item of itemsToReturn) {
+        const formData = new FormData()
+        formData.append("productId", item.productId)
+        formData.append("supplierId", supplier.id)
+        formData.append("quantity", item.quantity.toString())
+        formData.append("notes", notes)
+        await returnToSupplier(formData)
+      }
+      alert.success("DEVOLUCIÓN REGISTRADA", "Se realise la devolución exitosamente.")
       setOpen(false)
       setSelectedItems([])
       setNotes("")
-    } catch (error: any) {
-      toast.error(error.message || "ERROR AL REGISTRAR")
+    } catch (err: any) {
+      alert.error("ERROR", err.message || "No se pudo procesar la devolución.")
     } finally {
       setLoading(false)
     }

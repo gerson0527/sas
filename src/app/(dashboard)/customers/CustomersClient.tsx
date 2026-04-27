@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { getCustomers, getCustomerWithHistory, registerPayment, getCustomerStats } from "@/actions/customers"
+import { getCustomers, getCustomerWithHistory, registerPayment, getCustomerStats, bulkCreateCustomers } from "@/actions/customers"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import CustomerForm from "@/components/forms/CustomerForm"
 import CustomerActions from "@/components/customers/CustomerActions"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 import { Pagination } from "@/components/ui/Pagination"
+import { BulkImportDialog } from "@/components/shared/BulkImportDialog"
 
 type Customer = {
   id: string
@@ -85,7 +86,7 @@ export default function CustomersClient({
       const results = await getCustomers(storeId, search, withDebtOnly)
       setCustomers(results)
     } catch (err) {
-      toast.error("Error en búsqueda")
+      alert.error("Error en búsqueda", "No se pudieron cargar los clientes.")
     } finally {
       setLoading(false)
     }
@@ -98,7 +99,7 @@ export default function CustomersClient({
       setSelectedCustomer(data)
       setShowHistory(true)
     } catch (err) {
-      toast.error("Error cargando historial")
+      alert.error("Error cargando historial")
     } finally {
       setLoading(false)
     }
@@ -111,12 +112,12 @@ export default function CustomersClient({
     formData.set("notes", "Pago registrado")
     try {
       await registerPayment(customerId, storeId, formData)
-      toast.success("Pago registrado")
+      alert.success("Pago registrado", "El abono fue guardado correctamente.")
       const updated = await getCustomerWithHistory(customerId)
       setSelectedCustomer(updated)
       handleSearch()
     } catch (err: any) {
-      toast.error(err.message)
+      alert.error("Error al cargar detalles", err.message)
     }
   }
 
@@ -155,19 +156,32 @@ export default function CustomersClient({
         <h1 className="text-2xl font-bold font-mono uppercase tracking-widest text-primary">
           DIRECTORIO DE CLIENTES
         </h1>
-        <Dialog open={showNew} onOpenChange={setShowNew}>
-          <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap h-9 px-4 py-2 rounded-none uppercase tracking-widest text-xs font-bold border border-primary bg-primary/10 hover:bg-primary/20 text-primary">
-            AÑADIR CLIENTE
-          </DialogTrigger>
-          <DialogContent className="rounded-none border-border bg-background sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle className="font-mono uppercase tracking-widest text-sm text-primary">NUEVO CLIENTE</DialogTitle>
-            </DialogHeader>
-            <div className="mt-4">
-              <CustomerForm storeId={storeId} onSuccess={() => { setShowNew(false); handleSearch() }} />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <BulkImportDialog 
+            storeId={storeId} 
+            entityName="CLIENTES" 
+            onImport={async (storeId, data) => {
+              await bulkCreateCustomers(storeId, data)
+              // Refresh table after import
+              const results = await getCustomers(storeId, search, withDebtOnly)
+              setCustomers(results)
+            }} 
+          />
+          <Dialog open={showNew} onOpenChange={setShowNew}>
+            <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap h-9 px-4 py-2 rounded-none uppercase tracking-widest text-xs font-bold border border-primary bg-primary text-primary-foreground hover:bg-primary/90">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" className="h-4 w-4 mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              AÑADIR CLIENTE
+            </DialogTrigger>
+            <DialogContent className="rounded-none border-border bg-background sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="font-mono uppercase tracking-widest text-sm text-primary">NUEVO CLIENTE</DialogTitle>
+              </DialogHeader>
+              <div className="mt-4">
+                <CustomerForm storeId={storeId} onSuccess={() => { setShowNew(false); handleSearch() }} />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search */}

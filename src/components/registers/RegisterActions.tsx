@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { updateRegister, deleteRegister } from "@/actions/registers"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { toast } from "sonner"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { deleteRegister, updateRegister } from "@/actions/registers"
+import { alert } from "@/lib/alert"
 
 type Register = {
   id: string
@@ -27,11 +29,11 @@ export default function RegisterActions({ register, storeId }: { register: Regis
     setIsDeleting(true)
     try {
       await updateRegister(register.id, { name, location, isActive })
-      toast.success("Caja actualizada")
+      alert.success("Caja actualizada")
       router.refresh()
       setOpen(false)
     } catch (error) {
-      toast.error("Error al actualizar")
+      alert.error("Error al actualizar")
     } finally {
       setIsDeleting(false)
     }
@@ -42,10 +44,10 @@ export default function RegisterActions({ register, storeId }: { register: Regis
     setIsDeleting(true)
     try {
       await deleteRegister(register.id)
-      toast.success("Caja eliminada")
+      alert.success("Caja eliminada")
       router.refresh()
     } catch (error) {
-      toast.error("Error al eliminar")
+      alert.error("Error al eliminar")
     } finally {
       setIsDeleting(false)
     }

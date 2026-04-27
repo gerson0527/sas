@@ -1,11 +1,13 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useState } from "react"
-import { createTeamUser, removeUserFromStore } from "@/actions/team"
-import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { inviteUser, removeUser, updateUserRole, updateUserStore, createTeamUser, removeUserFromStore } from "@/actions/team"
+import { alert } from "@/lib/alert"
 
 type StoreUser = {
   id: string
@@ -54,7 +56,7 @@ export function TeamClient({
   async function handleCreateUser(e: React.FormEvent) {
     e.preventDefault()
     if (!newName || !newEmail || !newPassword || !selectedRole) {
-      toast.error("TODOS LOS CAMPOS SON REQUERIDOS")
+      alert.error("TODOS LOS CAMPOS SON REQUERIDOS")
       return
     }
     
@@ -69,9 +71,9 @@ export function TeamClient({
       })
       
       if (result && "error" in result) {
-        toast.error(result.error as string)
+        alert.error(result.error as string)
       } else {
-        toast.success("USUARIO CREADO")
+        alert.success("USUARIO CREADO")
         setNewName("")
         setNewEmail("")
         setNewPassword("")
@@ -80,7 +82,7 @@ export function TeamClient({
         router.refresh()
       }
     } catch (err: any) {
-      toast.error(err.message || "ERROR AL CREAR USUARIO")
+      alert.error(err.message || "ERROR AL CREAR USUARIO")
     } finally {
       setLoading(false)
     }
@@ -88,7 +90,7 @@ export function TeamClient({
 
   async function handleRemove(storeUserId: string, userId: string) {
     if (userId === currentUserId) {
-      toast.error("NO PUEDES ELIMINARTE A TI MISMO")
+      alert.error("NO PUEDES ELIMINARTE A TI MISMO")
       return
     }
     
@@ -97,10 +99,10 @@ export function TeamClient({
     setLoading(true)
     try {
       await removeUserFromStore(storeUserId)
-      toast.success("USUARIO ELIMINADO")
+      alert.success("USUARIO ELIMINADO")
       router.refresh()
     } catch (err: any) {
-      toast.error(err.message || "ERROR AL ELIMINAR")
+      alert.error(err.message || "ERROR AL ELIMINAR")
     } finally {
       setLoading(false)
     }

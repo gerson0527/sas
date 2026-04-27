@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getSuppliers, getSupplierProducts } from "@/actions/suppliers"
-import { deleteSupplier } from "@/actions/suppliers"
+import { getSuppliers, getSupplierProducts, deleteSupplier } from "@/actions/suppliers"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { SupplierForm } from "@/components/forms/SupplierForm"
 import { SupplierReturnDialog } from "@/components/suppliers/SupplierReturnDialog"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 
 type SupplierType = {
   id: string
@@ -45,7 +44,7 @@ export function SuppliersClient({ storeId, initialSuppliers }: { storeId: string
       setProducts(prods)
       setSelectedSupplier(supplier)
     } catch (error) {
-      toast.error("Error al cargar productos")
+      alert.error("Error al cargar productos")
     } finally {
       setLoading(false)
     }
@@ -55,11 +54,11 @@ export function SuppliersClient({ storeId, initialSuppliers }: { storeId: string
     if (!confirm("¿ELIMINAR ESTE PROVEEDOR?")) return
     try {
       await deleteSupplier(id)
-      toast.success("PROVEEDOR ELIMINADO")
+      alert.success("PROVEEDOR ELIMINADO", "El registro fue eliminado del sistema.")
       setSuppliers(prev => prev.filter(s => s.id !== id))
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "ERROR AL ELIMINAR")
+      alert.error("Error al eliminar", error.message || "No se pudo eliminar el proveedor.")
     }
   }
 

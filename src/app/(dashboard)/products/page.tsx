@@ -1,4 +1,4 @@
-import { getProducts } from "@/actions/products"
+import { getProducts, bulkCreateProducts } from "@/actions/products"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
@@ -7,6 +7,7 @@ import { ProductForm } from "@/components/forms/ProductForm"
 import { ProductsClient } from "@/components/products/ProductsClient"
 import { requirePermission, getUserPermissions } from "@/lib/permissions"
 import { Permission } from "@/lib/constants"
+import { BulkImportDialog } from "@/components/shared/BulkImportDialog"
 
 export default async function ProductsPage() {
   const session = await auth()
@@ -36,28 +37,40 @@ export default async function ProductsPage() {
           <h1 className="text-2xl font-bold tracking-widest uppercase text-primary">INVENTARIO DE PRODUCTOS</h1>
           <p className="text-xs uppercase text-muted-foreground mt-1 tracking-wider font-mono">Gestionar catálogo de tienda y stock</p>
         </div>
-        {canEdit && storeId && (
-          <Dialog>
-            <DialogTrigger render={
-              <Button className="rounded-none uppercase tracking-widest font-bold">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" className="h-4 w-4 mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                AÑADIR PRODUCTO
-              </Button>
-            } />
-            <DialogContent className="sm:max-w-[550px] rounded-none border border-border bg-background shadow-2xl shadow-primary/10">
-              <DialogHeader>
-                <DialogTitle className="uppercase tracking-widest font-bold text-primary flex items-center gap-2">
-                  <span className="h-2 w-2 bg-primary inline-block"></span>
-                  NUEVO PRODUCTO
-                </DialogTitle>
-                <DialogDescription className="text-xs uppercase tracking-wider font-mono">
-                  Ingrese detalles para registrar un nuevo artículo en el catálogo.
-                </DialogDescription>
-              </DialogHeader>
-              <ProductForm storeId={storeId} categories={categories} suppliers={suppliers} />
-            </DialogContent>
-          </Dialog>
-        )}
+        <div className="flex gap-2">
+          {canEdit && storeId && (
+            <BulkImportDialog 
+              storeId={storeId} 
+              entityName="PRODUCTOS" 
+              onImport={async (storeId, data) => {
+                "use server"
+                await bulkCreateProducts(storeId, data)
+              }} 
+            />
+          )}
+          {canEdit && storeId && (
+            <Dialog>
+              <DialogTrigger render={
+                <Button className="rounded-none uppercase tracking-widest font-bold">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" className="h-4 w-4 mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  AÑADIR PRODUCTO
+                </Button>
+              } />
+              <DialogContent className="sm:max-w-[550px] rounded-none border border-border bg-background shadow-2xl shadow-primary/10">
+                <DialogHeader>
+                  <DialogTitle className="uppercase tracking-widest font-bold text-primary flex items-center gap-2">
+                    <span className="h-2 w-2 bg-primary inline-block"></span>
+                    NUEVO PRODUCTO
+                  </DialogTitle>
+                  <DialogDescription className="text-xs uppercase tracking-wider font-mono">
+                    Ingrese detalles para registrar un nuevo artículo en el catálogo.
+                  </DialogDescription>
+                </DialogHeader>
+                <ProductForm storeId={storeId} categories={categories} suppliers={suppliers} />
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
 
       {!storeId ? (

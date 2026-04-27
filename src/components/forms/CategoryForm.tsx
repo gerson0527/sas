@@ -6,7 +6,7 @@ import { createCategory, updateCategory } from "@/actions/categories"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 
 type Category = {
   id: string
@@ -40,15 +40,15 @@ export function CategoryForm({
       
       if (initialData?.id) {
         await updateCategory(initialData.id, formData)
-        toast.success("Categoría actualizada con éxito")
+        alert.success("CATEGORÍA ACTUALIZADA", "Los cambios fueron guardados.")
       } else {
         await createCategory(formData)
-        toast.success("Categoría creada con éxito")
+        alert.success("CATEGORÍA CREADA", "La categoría fue agregada al sistema.")
       }
       router.refresh()
       if (onSuccess) onSuccess()
     } catch (error: any) {
-      toast.error(error.message || (initialData?.id ? "No se pudo actualizar la categoría" : "No se pudo crear la categoría"))
+      alert.error("ERROR", error.message || "No se pudo procesar la solicitud.")
     } finally {
       setLoading(false)
     }

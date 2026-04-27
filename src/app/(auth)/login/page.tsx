@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 import { motion } from "framer-motion"
 import { Eye, EyeOff } from "lucide-react"
 
@@ -31,13 +31,13 @@ export default function LoginPage() {
       })
 
       if (res?.error) {
-        toast.error("Correo electrónico o contraseña no válidos")
+        alert.error("Correo electrónico o contraseña no válidos")
       } else {
         router.push("/dashboard")
         router.refresh()
       }
     } catch (error) {
-      toast.error("Algo salió mal")
+      alert.error("Algo salió mal")
     } finally {
       setLoading(false)
     }

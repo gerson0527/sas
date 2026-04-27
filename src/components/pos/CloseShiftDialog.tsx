@@ -5,7 +5,7 @@ import { closeCashShift, getCurrentShift } from "@/actions/sales"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 import { Shift } from "./types"
 
 type ReturnInfo = {
@@ -56,7 +56,7 @@ export function CloseShiftDialog({ open, onOpenChange, shift, storeId }: CloseSh
     
     const actual = parseFloat(actualCash)
     if (isNaN(actual) || actual < 0) {
-      toast.error("MONTO INVÁLIDO")
+      alert.error("MONTO INVÁLIDO")
       return
     }
     
@@ -67,11 +67,11 @@ export function CloseShiftDialog({ open, onOpenChange, shift, storeId }: CloseSh
         saleReturns: result.saleReturns || [],
         supplierReturns: result.supplierReturns || []
       })
-      toast.success("CIERRE REGISTRADO")
+      alert.success("CIERRE REGISTRADO")
       // NO cerramos el dialog aquí - se mantiene abierto para mostrar resumen
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "ERROR AL CERRAR")
+      alert.error(error.message || "ERROR AL CERRAR")
     } finally {
       setIsProcessing(false)
     }

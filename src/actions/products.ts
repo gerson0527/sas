@@ -107,3 +107,58 @@ export async function deleteProduct(id: string) {
 
   revalidatePath("/products")
 }
+
+export async function bulkCreateProducts(storeId: string, products: any[]) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const validProducts = products.map((p) => ({
+    name: p.NOMBRE || p.name || "Sin Nombre",
+    sku: p.SKU || p.sku || null,
+    price: parseFloat(p.PRECIO || p.price) || 0,
+    regularPrice: parseFloat(p.PRECIO_NORMAL || p.regularPrice) || null,
+    cost: parseFloat(p.COSTO || p.cost) || null,
+    stock: parseInt(p.STOCK || p.stock) || 0,
+    minStock: parseInt(p.STOCK_MINIMO || p.minStock) || 5,
+    taxRate: parseFloat(p.IVA || p.taxRate) || 19,
+    taxType: p.TIPO_IMPUESTO || p.taxType || "TAXED",
+    unitMeasure: p.UNIDAD_MEDA || p.unitMeasure || "94",
+    storeId,
+  }))
+
+  await prisma.product.createMany({
+    data: validProducts,
+    skipDuplicates: true
+  })
+
+  revalidatePath("/products")
+}
+
+export async function createSupplierReturn(productId: string, supplierId: string, quantity: number, notes?: string) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const product = await prisma.product.findUnique({ where: { id: productId } })
+  if (!product) throw new Error("Producto no encontrado")
+
+  await prisma.$transaction([
+    prisma.stockMovement.create({
+      data: {
+        type: "RETURN_TO_SUPPLIER",
+        quantity: -quantity,
+        notes: notes || "Devolución a proveedor",
+        productId,
+        userId: session.user.id,
+        supplierName: null,
+      }
+    }),
+    prisma.product.update({
+      where: { id: productId },
+      data: {
+        stock: { decrement: quantity }
+      }
+    })
+  ])
+
+  revalidatePath("/products")
+}

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import { createSale, openCashShift } from "@/actions/sales"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 import { CloseShiftDialog } from "./CloseShiftDialog"
 import { ReturnDialog } from "./ReturnDialog"
 import { TicketDialog } from "./TicketDialog"
@@ -90,7 +90,7 @@ export function POSClient({ products, storeId, customers, categories, currentShi
 
   const handleCreateCustomer = async () => {
     if (!newCustomer.name.trim()) {
-      toast.error("INGRESE NOMBRE DEL CLIENTE")
+      alert.error("INGRESE NOMBRE DEL CLIENTE")
       return
     }
     try {
@@ -110,13 +110,13 @@ export function POSClient({ products, storeId, customers, categories, currentShi
       const data = await res.json()
       if (data.id) {
         setSelectedCustomerId(data.id)
-        toast.success("CLIENTE CREADO")
+        alert.success("CLIENTE CREADO")
         setShowNewCustomerDialog(false)
         setNewCustomer({ name: "", document: "", email: "", phone: "", address: "", creditLimit: 0 })
         setCustomerSearch("")
       }
     } catch {
-      toast.error("ERROR AL CREAR CLIENTE")
+      alert.error("ERROR AL CREAR CLIENTE")
     }
   }
 
@@ -176,9 +176,9 @@ export function POSClient({ products, storeId, customers, categories, currentShi
       const shiftData = await openCashShift(storeId, parseFloat(startingCash), selectedRegisterId || undefined)
       setShift(shiftData)
       setShowOpenShift(false)
-      toast.success("CAJA APERTURADA")
+      alert.success("CAJA APERTURADA")
     } catch (error: any) {
-      toast.error(error.message || "ERROR AL ABRIR CAJA")
+      alert.error(error.message || "ERROR AL ABRIR CAJA")
     } finally {
       setIsProcessing(false)
     }
@@ -191,18 +191,18 @@ export function POSClient({ products, storeId, customers, categories, currentShi
 
   const addToCart = (product: Product) => {
     if (!shift || shift.status === "CLOSED") {
-      toast.error("ABRA LA CAJA PRIMERO")
+      alert.error("ABRA LA CAJA PRIMERO")
       return
     }
     if (product.stock <= 0) {
-      toast.error("AGOTADO")
+      alert.error("AGOTADO")
       return
     }
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id)
       if (existing) {
         if (existing.quantity >= product.stock) {
-          toast.warning("STOCK INSUFICIENTE")
+          alert.warning("STOCK INSUFICIENTE")
           return prev
         }
         return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)
@@ -217,7 +217,7 @@ export function POSClient({ products, storeId, customers, categories, currentShi
       if (item.id === productId) {
         const newQty = Math.max(0, item.quantity + delta)
         if (newQty > item.stock) {
-          toast.warning("MAXIMO STOCK ALCANZADO")
+          alert.warning("MAXIMO STOCK ALCANZADO")
           return item
         }
         return { ...item, quantity: newQty }
@@ -233,18 +233,18 @@ export function POSClient({ products, storeId, customers, categories, currentShi
   const handleCheckout = async () => {
     if (cart.length === 0) return
     if (!shift || shift.status === "CLOSED") {
-      toast.error("ABRA LA CAJA PRIMERO")
+      alert.error("ABRA LA CAJA PRIMERO")
       return
     }
     
     const isDebt = paymentMethod.includes("DEBT")
     if (isDebt && !selectedCustomerId) {
-      toast.error("SELECCIONE CLIENTE PARA FIADO")
+      alert.error("SELECCIONE CLIENTE PARA FIADO")
       return
     }
     
     if (!isDebt && paymentMethod.length === 0) {
-      toast.error("SELECCIONE MÉTODO DE PAGO")
+      alert.error("SELECCIONE MÉTODO DE PAGO")
       return
     }
 
@@ -256,14 +256,14 @@ export function POSClient({ products, storeId, customers, categories, currentShi
       const availableCredit = creditLimit - currentBalance
       
       if (total > availableCredit) {
-        toast.error(`CRÉDITO INSUFICIENTE. DISPONIBLE: $${availableCredit.toFixed(2)}`)
+        alert.error(`CRÉDITO INSUFICIENTE. DISPONIBLE: $${availableCredit.toFixed(2)}`)
         return
       }
     }
     
     const totalPaid = Object.values(amounts).reduce((sum, val) => sum + val, 0)
     if (!isDebt && totalPaid < total) {
-      toast.error("EL MONTO NO CUBRE EL TOTAL")
+      alert.error("EL MONTO NO CUBRE EL TOTAL")
       return
     }
     
@@ -294,7 +294,7 @@ setShowTicket(true)
       setPaymentMethod(["CASH"])
       setAmounts({})
     } catch (error: any) {
-      toast.error(error.message || "ERROR AL PROCESAR")
+      alert.error(error.message || "ERROR AL PROCESAR")
     } finally {
       setIsProcessing(false)
     }

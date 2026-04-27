@@ -123,3 +123,101 @@
     font-family: var(--font-sans);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   TACTICAL COMMAND ALERT SYSTEM - Sonner Custom Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+.tactical-toast {
+  border: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  background: var(--card) !important;
+  box-shadow: 4px 4px 0px var(--border) !important;
+  font-family: var(--font-mono) !important;
+  padding: 12px 16px !important;
+  min-width: 320px !important;
+  max-width: 480px !important;
+}
+
+.tactical-title {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  color: var(--foreground) !important;
+  margin-bottom: 4px !important;
+  padding-right: 24px !important;
+}
+
+.tactical-description {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--muted-foreground) !important;
+  line-height: 1.4 !important;
+}
+
+.tactical-action {
+  border-radius: 0 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: 1px solid var(--primary) !important;
+  padding: 4px 12px !important;
+  height: auto !important;
+}
+
+.tactical-action:hover {
+  opacity: 0.85 !important;
+}
+
+.tactical-cancel {
+  border-radius: 0 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  background: transparent !important;
+  color: var(--muted-foreground) !important;
+  border: 1px solid var(--border) !important;
+  padding: 4px 12px !important;
+  height: auto !important;
+}
+
+/* Sonner container positioning - bottom right tactical style */
+[data-sonner-toaster] {
+  --toast-offset: 16px;
+}
+
+/* Loading spinner in toast */
+[data-sonner-toast] [data-icon="loading"] {
+  color: var(--primary) !important;
+}
+
+/* Close button on toasts */
+[data-sonner-toast] [data-close] {
+  color: var(--muted-foreground) !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  border: 1px solid var(--border) !important;
+  top: 8px !important;
+  right: 8px !important;
+  width: 20px !important;
+  height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-sonner-toast] [data-close]:hover {
+  color: var(--foreground) !important;
+  border-color: var(--foreground) !important;
+}

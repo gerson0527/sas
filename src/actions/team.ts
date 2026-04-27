@@ -201,3 +201,35 @@ export async function createTeamUser(storeId: string, data: CreateTeamUserInput)
   revalidatePath('/settings/team')
   return { success: true }
 }
+
+export async function removeUser(storeId: string, storeUserId: string) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  await prisma.storeUser.delete({
+    where: { id: storeUserId }
+  })
+
+  revalidatePath('/settings/team')
+  return { success: true }
+}
+
+export async function updateUserStore(storeUserId: string, data: {
+  customRoleId?: string | null
+  defaultCashRegisterId?: string | null
+}) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  await prisma.storeUser.update({
+    where: { id: storeUserId },
+    data
+  })
+
+  revalidatePath('/settings/team')
+  return { success: true }
+}

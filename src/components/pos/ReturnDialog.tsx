@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { createSaleReturn } from "@/actions/sales"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 type SaleItem = {
@@ -49,10 +49,10 @@ export function ReturnDialog({ storeId, currentShift }: { storeId: string, curre
         setSale(data)
         setSelectedItems(data.items.map((i: any) => ({ productId: i.productId, quantity: i.quantity })))
       } else {
-        toast.error("Venta no encontrada")
+        alert.error("Venta no encontrada")
       }
     } catch {
-      toast.error("Error al buscar venta")
+      alert.error("Error al buscar venta")
     }
   }
 
@@ -67,13 +67,13 @@ export function ReturnDialog({ storeId, currentShift }: { storeId: string, curre
 
   const handleReturn = async () => {
     if (!sale || selectedItems.length === 0 || !reason) {
-      toast.error("Complete todos los campos")
+      alert.error("Complete todos los campos")
       return
     }
 
     const itemsToReturn = selectedItems.filter(i => i.quantity > 0)
     if (itemsToReturn.length === 0) {
-      toast.error("Seleccione al menos un producto")
+      alert.error("Seleccione al menos un producto")
       return
     }
 
@@ -94,14 +94,14 @@ export function ReturnDialog({ storeId, currentShift }: { storeId: string, curre
         reason,
         refundMethod
       )
-      toast.success("DEVOLUCIÓN PROCESADA")
+      alert.success("DEVOLUCIÓN PROCESADA")
       setOpen(false)
       setSaleId("")
       setSale(null)
       setSelectedItems([])
       setReason("")
     } catch (error: any) {
-      toast.error(error.message || "ERROR AL PROCESAR DEVOLUCIÓN")
+      alert.error(error.message || "ERROR AL PROCESAR DEVOLUCIÓN")
     } finally {
       setLoading(false)
     }

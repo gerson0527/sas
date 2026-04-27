@@ -6,8 +6,7 @@ import { AVAILABLE_PERMISSIONS } from "@/lib/constants"
 import { requirePermission } from "@/lib/permissions"
 import type { Permission } from "@/lib/constants"
 import Link from "next/link"
-import { deleteRole } from "@/actions/roles"
-import { revalidatePath } from "next/cache"
+import { RoleActions } from "@/components/roles/RoleActions"
 
 export default async function RolesPage() {
   const session = await auth()
@@ -21,20 +20,9 @@ export default async function RolesPage() {
   
   if (storeId) {
     await requirePermission(storeId, "manage_roles")
-    await seedDefaultRoles(storeId)
   }
   
   const roles = storeId ? await getRoles(storeId) : []
-
-  async function handleDeleteRole(roleId: string) {
-    "use server"
-    try {
-      await deleteRole(roleId)
-      revalidatePath("/settings/roles")
-    } catch (e) {
-      console.error(e)
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -89,14 +77,7 @@ export default async function RolesPage() {
                   </div>
                   <div className="flex gap-2">
                     <RoleForm storeId={storeId!} existingRole={role} isEdit />
-                    <form action={async () => {
-                      "use server"
-                      await handleDeleteRole(role.id)
-                    }}>
-                      <button className="text-[9px] uppercase tracking-widest text-destructive hover:bg-destructive/10 px-2 py-1 border border-destructive/30">
-                        ELIMINAR
-                      </button>
-                    </form>
+                    <RoleActions role={role} />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">

@@ -6,7 +6,7 @@ import { createSupplier, updateSupplier } from "@/actions/suppliers"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 
 export function SupplierForm({ storeId, initialData, onSuccess }: { storeId: string, initialData?: any, onSuccess?: () => void }) {
   const router = useRouter()
@@ -17,15 +17,15 @@ export function SupplierForm({ storeId, initialData, onSuccess }: { storeId: str
       setLoading(true)
       if (initialData?.id) {
         await updateSupplier(initialData.id, formData)
-        toast.success("Proveedor actualizado con éxito")
+        alert.success("PROVEEDOR ACTUALIZADO", "Los datos fueron guardados correctamente.")
       } else {
         await createSupplier(formData)
-        toast.success("Proveedor creado con éxito")
+        alert.success("PROVEEDOR CREADO", "El proveedor fue registrado en el sistema.")
       }
       router.refresh()
       if (onSuccess) onSuccess()
     } catch (error) {
-      toast.error(initialData?.id ? "No se pudo actualizar el proveedor" : "No se pudo crear el proveedor")
+      alert.error("ERROR", "No se pudo procesar la solicitud.")
     } finally {
       setLoading(false)
     }

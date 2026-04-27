@@ -2,13 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { deleteProduct } from "@/actions/products"
-import { createSupplierReturn } from "@/actions/purchases"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { ProductForm } from "@/components/forms/ProductForm"
-import { toast } from "sonner"
+import { Input } from "@/components/ui/input"
+import { deleteProduct, createSupplierReturn } from "@/actions/products"
+import { alert } from "@/lib/alert"
 
 const RETURN_REASONS = [
   "PRODUCTO DAÑADO",
@@ -34,10 +33,10 @@ export function ProductActions({ product, storeId, categories, suppliers }: { pr
     try {
       setIsDeleting(true)
       await deleteProduct(product.id)
-      toast.success("Producto eliminado con éxito")
+      alert.success("Producto eliminado con éxito")
       router.refresh()
     } catch (error) {
-      toast.error("No se pudo eliminar el producto")
+      alert.error("No se pudo eliminar el producto")
     } finally {
       setIsDeleting(false)
     }
@@ -45,33 +44,28 @@ export function ProductActions({ product, storeId, categories, suppliers }: { pr
 
   const handleReturn = async () => {
     if (!returnSupplierId) {
-      toast.error("SELECCIONE PROVEEDOR")
+      alert.error("SELECCIONE PROVEEDOR")
       return
     }
     if (returnQty <= 0 || returnQty > product.stock) {
-      toast.error("CANTIDAD INVÁLIDA")
+      alert.error("CANTIDAD INVÁLIDA")
       return
     }
     if (!returnReason) {
-      toast.error("SELECCIONE MOTIVO")
+      alert.error("SELECCIONE MOTIVO")
       return
     }
     
     try {
       setIsReturning(true)
-      await createSupplierReturn(returnSupplierId, [{
-        productId: product.id,
-        quantity: returnQty,
-        cost: product.cost || 0,
-        reason: returnReason
-      }], returnNotes)
-      toast.success("DEVOLUCIÓN REGISTRADA")
+      await createSupplierReturn(product.id, returnSupplierId, returnQty, returnNotes)
+      alert.success("DEVOLUCIÓN REGISTRADA")
       setOpenReturn(false)
       setReturnQty(1)
       setReturnReason("")
       setReturnNotes("")
     } catch (error: any) {
-      toast.error(error.message || "ERROR AL REGISTRAR DEVOLUCIÓN")
+      alert.error(error.message || "ERROR AL REGISTRAR DEVOLUCIÓN")
     } finally {
       setIsReturning(false)
     }

@@ -116,3 +116,40 @@ export async function getSupplierProducts(supplierId: string) {
 
   return products.sort((a, b) => a.name.localeCompare(b.name))
 }
+
+export async function returnToSupplier(formData: FormData) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const productId = formData.get("productId") as string
+  const supplierId = formData.get("supplierId") as string
+  const quantity = parseInt(formData.get("quantity") as string)
+  const notes = formData.get("notes") as string
+
+  if (!productId || !supplierId || !quantity || quantity <= 0) {
+    throw new Error("Datos inválidos para la devolución")
+  }
+
+  const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } })
+  if (!supplier) throw new Error("Proveedor no encontrado")
+
+  await prisma.$transaction([
+    prisma.stockMovement.create({
+      data: {
+        type: "RETURN_TO_SUPPLIER",
+        quantity: -quantity,
+        notes: notes || "Devolución a proveedor",
+        productId,
+        userId: session.user.id,
+        supplierName: supplier.name,
+      }
+    }),
+    prisma.product.update({
+      where: { id: productId },
+      data: { stock: { decrement: quantity } }
+    })
+  ])
+
+  revalidatePath("/suppliers")
+  revalidatePath("/products")
+}

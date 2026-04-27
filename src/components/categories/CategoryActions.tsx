@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { deleteCategory } from "@/actions/categories"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { CategoryForm } from "@/components/forms/CategoryForm"
-import { toast } from "sonner"
+import { deleteCategory } from "@/actions/categories"
+import { alert } from "@/lib/alert"
 
 export function CategoryActions({ category, storeId, parentCategories = [] }: { category: any, storeId: string, parentCategories?: any[] }) {
   const router = useRouter()
@@ -20,10 +20,10 @@ export function CategoryActions({ category, storeId, parentCategories = [] }: { 
     try {
       setIsDeleting(true)
       await deleteCategory(category.id)
-      toast.success("Categoría eliminada con éxito")
+      alert.success("Categoría eliminada con éxito")
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "No se pudo eliminar la categoría")
+      alert.error(error.message || "No se pudo eliminar la categoría")
     } finally {
       setIsDeleting(false)
     }

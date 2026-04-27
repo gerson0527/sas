@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createRegister, updateRegister, deleteRegister } from "@/actions/registers"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { toast } from "sonner"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { createRegister, updateRegister, deleteRegister } from "@/actions/registers"
+import { alert } from "@/lib/alert"
 
 type Register = {
   id: string
@@ -36,12 +38,12 @@ export function RegistersClient({
         name: formData.get("name") as string,
         location: formData.get("location") as string
       })
-      toast.success("CAJA CREADA")
+      alert.success("CAJA CREADA")
       setOpen(false)
       setRegisters(prev => [...prev, { ...created, _count: { cashShifts: 0 } }])
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "ERROR AL CREAR")
+      alert.error(error.message || "ERROR AL CREAR")
     } finally {
       setLoading(false)
     }
@@ -53,11 +55,11 @@ export function RegistersClient({
     setLoading(true)
     try {
       await deleteRegister(registerId)
-      toast.success("CAJA ELIMINADA")
+      alert.success("CAJA ELIMINADA")
       setRegisters(prev => prev.filter(r => r.id !== registerId))
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "ERROR AL ELIMINAR")
+      alert.error(error.message || "ERROR AL ELIMINAR")
     } finally {
       setLoading(false)
     }

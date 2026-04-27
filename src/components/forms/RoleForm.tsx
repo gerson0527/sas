@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useState } from "react"
 import { createRole, updateRole } from "@/actions/roles"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { alert } from "@/lib/alert"
 import { AVAILABLE_PERMISSIONS } from "@/lib/constants"
 
 type ExistingRole = {
@@ -75,15 +75,15 @@ function RoleCreateForm({ storeId, existingRole, onSuccess }: { storeId: string;
     try {
       if (existingRole) {
         await updateRole(existingRole.id, name, permissions)
-        toast.success("ROL ACTUALIZADO")
+        alert.success("ROL ACTUALIZADO", "Los permisos fueron actualizados.")
       } else {
         await createRole(storeId, name, permissions)
-        toast.success("ROL CREADO")
+        alert.success("ROL CREADO", "El nuevo rol fue agregado al sistema.")
       }
       router.refresh()
       onSuccess()
     } catch (err: any) {
-      toast.error(err.message || "Error al guardar el rol")
+      alert.error("ERROR", err.message || "No se pudo guardar el rol.")
     } finally {
       setLoading(false)
     }
