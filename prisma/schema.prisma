@@ -1,0 +1,438 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- AUTENTICACIÓN Y ROLES ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  isFirstTime   Boolean   @default(true)
+  accounts      Account[]
+  sessions      Session[]
+
+  stores       StoreUser[] // Un usuario puede pertenecer a varias tiendas
+  movements    StockMovement[] // Registro de quién movió el stock
+  sales        Sale[]      // Ventas realizadas por este cajero
+  purchases    Purchase[]
+  customerPays CustomerPayment[]
+  cashShifts   CashShift[]
+  closedShifts CashShift[] @relation("ClosedByUser")
+  expenses    Expense[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Tabla pivote para Roles (Dueño vs Empleado)
+model StoreUser {
+  id           String      @id @default(cuid())
+  userId       String
+  storeId      String
+  roleId       String? // ID del rol personalizado (opcional, para compatibilidad)
+  customRoleId String?
+  user         User        @relation(fields: [userId], references: [id])
+  store        Store       @relation(fields: [storeId], references: [id])
+  customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
+  defaultCashRegisterId String?
+  defaultCashRegister CashRegister? @relation("UserCashRegisters", fields: [defaultCashRegisterId], references: [id])
+
+  @@unique([userId, storeId])
+}
+
+// Roles personalizados por tienda
+model CustomRole {
+  id          String       @id @default(cuid())
+  name        String // Nombre del rol, ej: "Cajero", "Gerente", "Vendedor"
+  permissions Permission[] // Permisos asociados
+  storeId     String
+  store       Store        @relation(fields: [storeId], references: [id])
+  users       StoreUser[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// Permisos disponibles
+model Permission {
+  id          String       @id @default(cuid())
+  name        String       @unique // ej: "manage_users", "edit_products", "view_reports"
+  description String?
+  customRoles CustomRole[]
+}
+
+// --- ROLES PERSONALIZADOS (TIENDA) ---
+// Los roles predefinidos se manejan como registros en la base de datos
+// Se inicializarán con semillas
+
+// --- TIENDA Y PAGOS (TENANT) ---
+
+model Store {
+  id    String      @id @default(cuid())
+  name  String
+  users StoreUser[]
+
+  // Stripe Billing
+  stripeCustomerId String?  @unique
+  subscriptionId   String?  @unique
+  planType         PlanType @default(FREE) // FREE, PRO
+  isActive         Boolean  @default(true)
+
+  categories   Category[]
+  suppliers    Supplier[]
+  products     Product[]
+  sales        Sale[]
+  purchases    Purchase[]
+  customers    Customer[]
+  cashShifts   CashShift[]
+  customerPays CustomerPayment[]
+  roles        CustomRole[]
+  expenses     Expense[]
+  cashRegisters CashRegister[]
+}
+
+model CashRegister {
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  isActive  Boolean  @default(true)
+  
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  
+  cashShifts    CashShift[]
+  storeUsers   StoreUser[] @relation("UserCashRegisters")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ExpenseCategory {
+  RENT
+  UTILITIES
+  SUPPLIES
+  SERVICES
+  PAYROLL
+  MAINTENANCE
+  TRANSPORT
+  TAXES
+  MARKETING
+  OTHER
+}
+
+enum PlanType {
+  FREE
+  PRO
+}
+
+// --- INVENTARIO Y CATÁLOGO ---
+
+model Supplier {
+  id        String     @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  storeId   String
+  store     Store      @relation(fields: [storeId], references: [id])
+  products  Product[]
+  purchases Purchase[]
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  storeId   String
+  store     Store     @relation(fields: [storeId], references: [id])
+  
+  parentId String?
+  parent   Category? @relation("CategorySubcategories", fields: [parentId], references: [id])
+  subcategories Category[] @relation("CategorySubcategories")
+  
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  sku         String? // Código de barras (Crucial para el POS)
+  description String?
+  price       Float // Precio de venta (actual)
+  regularPrice Float? // Precio normal (antes de descuento)
+  cost        Float? // Costo de compra (Para calcular ganancias)
+  stock       Int     @default(0)
+  minStock    Int     @default(5)
+  imageUrl    String?
+  
+  // Facturación Electrónica (DIAN/Plemsi)
+  taxRate      Float   @default(19)      // Porcentaje IVA (ej. 19, 5, 0)
+  taxType      String  @default("TAXED") // TAXED (Gravado), EXEMPT (Exento), EXCLUDED (Excluido)
+  unitMeasure  String  @default("94")    // 94 = Unidad, KGM = Kilogramo, etc.
+  standardCode String?                   // Código UNSPSC (8 dígitos)
+
+  storeId    String
+  store      Store     @relation(fields: [storeId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  movements     StockMovement[]
+  saleItems     SaleItem[]
+  purchaseItems PurchaseItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+// --- HISTORIAL DE STOCK (KARDEX) ---
+
+model StockMovement {
+  id       String       @id @default(cuid())
+  type     MovementType // IN (Compra), OUT (Venta/Pérdida), ADJUSTMENT, RETURN_TO_SUPPLIER
+  quantity Int // Cantidad movida (ej. +50, -2)
+  notes    String? // Razón (ej. "Mercancía dañada")
+
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id]) // Quién hizo el movimiento
+  
+  supplierName String? // Nombre del proveedor para devoluciones (sin relación)
+  returnInvoiceId String? // ID de factura de referencia
+  
+  createdAt DateTime @default(now())
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  RETURN_TO_SUPPLIER
+}
+
+// --- VENTAS (POS) ---
+
+model Sale {
+  id            String        @id @default(cuid())
+  invoiceNumber String?       @unique // FAC-XXXXX formato
+  total         Float
+  paymentType   PaymentMethod @default(CASH)
+  paymentStatus PaymentStatus @default(PAID) // PAID, PENDING (fiado)
+  
+  // Devoluciones del mismo día
+  isReturn      Boolean      @default(false) // Si es una devolución
+  returnReason  String?      // Motivo de devolución (dañado, no sirve, etc.)
+  originalSaleId String?     // Referencia a venta original si es devolución
+  refundAmount Float?      @default(0) // Monto reembolsado
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+  userId  String // Cajero que procesó la venta
+  user    User   @relation(fields: [userId], references: [id])
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  shiftId String?
+  shift   CashShift? @relation(fields: [shiftId], references: [id])
+
+// Electronic Invoicing (Latam Structure)
+  invoiceStatus        String?   // PENDING, SENT, ACCEPTED, REJECTED, ERROR
+  plemsiId           String?   // ID de Plemsi
+  dianCufe           String?   // Código único DIAN
+  dianQrUrl          String?   // URL QR verificación
+  dianXmlId          String?   // ID del XML
+  sentAt             DateTime?  // Fecha de envío
+  acceptedAt         DateTime?  // Fecha de aceptación
+  rejectedAt         DateTime?  // Fecha de rechazo
+  rejectionReason    String?   // Motivo de rechazo
+
+  items     SaleItem[]
+  createdAt DateTime   @default(now())
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float // Precio histórico congelado en el momento de venta
+}
+
+// --- CLIENTES (CRM Y FIADO) ---
+
+model Customer {
+  id          String  @id @default(cuid())
+  name        String
+  document    String? // NIT / DNI
+  email       String?
+  phone       String?
+  address     String?
+  creditLimit Float   @default(0) // 0 significa sin limite o sin credito permitido
+  balance     Float   @default(0) // Deuda total
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  sales     Sale[]
+  payments  CustomerPayment[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model CustomerPayment {
+  id     String  @id @default(cuid())
+  amount Float
+  notes  String?
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  userId     String // Cajero que recibió el pago
+  user       User     @relation(fields: [userId], references: [id])
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// --- TURNOS DE CAJA (CASH SHIFTS) ---
+
+model CashShift {
+  id        String      @id @default(cuid())
+  startTime DateTime    @default(now())
+  endTime   DateTime?
+  status    ShiftStatus @default(OPEN)
+
+  startingCash Float  @default(0) // Base
+  expectedCash Float? // Calculado por el sistema
+  actualCash   Float? // Contado por el cajero
+  difference   Float? // actual - expected
+
+  // Sales breakdown
+  totalCashSales     Float? @default(0)
+  totalCardSales     Float? @default(0)
+  totalTransferSales Float? @default(0)
+  totalSales         Float? @default(0)
+
+  // User tracking
+  userId         String
+  user           User    @relation(fields: [userId], references: [id])
+  closedByUserId String? // Who closed the shift
+  closedByUser   User?   @relation("ClosedByUser", fields: [closedByUserId], references: [id])
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  cashRegisterId String?
+  cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
+
+  sales Sale[]
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+// --- GASTOS ---
+
+model Expense {
+  id          String          @id @default(cuid())
+  description String
+  amount      Float
+  category    ExpenseCategory @default(OTHER)
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// --- COMPRAS A PROVEEDORES ---
+
+model Purchase {
+  id    String  @id @default(cuid())
+  total Float
+  notes String?
+  isReturn Boolean @default(false) // Si es una devolución al proveedor
+  returnReason String? // Motivo de devolución
+
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+
+  items     PurchaseItem[]
+  createdAt DateTime       @default(now())
+}
+
+model PurchaseItem {
+  id       String @id @default(cuid())
+  quantity Int
+  cost     Float // Costo en el momento de la compra
+
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+}
