@@ -37,6 +37,7 @@ export type Product = {
   stock: number
   categoryId: string | null
   category?: { name: string } | null
+  taxRate?: number
 }
 
 export type Customer = {

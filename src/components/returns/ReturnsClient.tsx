@@ -28,6 +28,10 @@ export function ReturnsClient({ storeId, initialReport }: ReturnsPageClientProps
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [report, setReport] = useState(initialReport)
   const [loading, setLoading] = useState(false)
+  
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searching, setSearching] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -47,6 +51,22 @@ export function ReturnsClient({ storeId, initialReport }: ReturnsPageClientProps
       console.error(error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return
+    
+    setSearching(true)
+    try {
+      const res = await fetch(`/api/returns/search?q=${encodeURIComponent(searchQuery)}`)
+      const data = await res.json()
+      setSearchResults(data.returns || [])
+    } catch (error) {
+      console.error(error)
+      setSearchResults([])
+    } finally {
+      setSearching(false)
     }
   }
 
@@ -290,15 +310,59 @@ export function ReturnsClient({ storeId, initialReport }: ReturnsPageClientProps
                 BUSCAR DEVOLUCIONES
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-muted-foreground uppercase tracking-widest text-sm mb-4">
-                  El buscador de devoluciones está en construcción.
-                </p>
-                <Button className="rounded-none uppercase tracking-widest font-bold" disabled>
-                  PRÓXIMAMENTE
+            <CardContent className="p-6 space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="BUSCAR POR ID, CLIENTE O PRODUCTO..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="h-10 rounded-none"
+                />
+                <Button 
+                  onClick={handleSearch}
+                 disabled={searching}
+                  className="h-10 rounded-none uppercase font-bold"
+                >
+                  {searching ? "BUSCANDO..." : "BUSCAR"}
                 </Button>
               </div>
+              
+              {searchResults.length > 0 ? (
+                <Table>
+                  <TableHeader className="bg-primary/5">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-[10px] uppercase">TIPO</TableHead>
+                      <TableHead className="text-[10px] uppercase">ID</TableHead>
+                      <TableHead className="text-[10px] uppercase">CLIENTE/PROVEEDOR</TableHead>
+                      <TableHead className="text-[10px] uppercase">MONTO</TableHead>
+                      <TableHead className="text-[10px] uppercase">MOTIVO</TableHead>
+                      <TableHead className="text-[10px] uppercase">FECHA</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="font-mono text-xs">
+                    {searchResults.map((r, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-bold">{r.type}</TableCell>
+                        <TableCell>#{r.id.slice(-4)}</TableCell>
+                        <TableCell>{r.customerName || r.supplierName || "—"}</TableCell>
+                        <TableCell className="font-bold">${Math.abs(r.total).toFixed(2)}</TableCell>
+                        <TableCell>{r.returnReason || "—"}</TableCell>
+                        <TableCell>{mounted ? new Date(r.createdAt).toLocaleDateString("es-CO") : "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : searchQuery && !searching ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No se encontraron devoluciones.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Ingresa un término de búsqueda para encontrar devoluciones.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

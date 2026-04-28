@@ -33,6 +33,10 @@ export function ProductsClient({ products: initialProducts, storeId, categories,
   const [mounted, setMounted] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [currentPage, setCurrentPage] = useState(1)
+  const [search, setSearch] = useState("")
+  const [filterCategory, setFilterCategory] = useState("")
+  const [filterSupplier, setFilterSupplier] = useState("")
+  const [filterStock, setFilterStock] = useState("")
   const pageSize = 20
 
   useEffect(() => {
@@ -44,14 +48,94 @@ export function ProductsClient({ products: initialProducts, storeId, categories,
     setCurrentPage(1)
   }, [products.length])
 
-  const totalPages = Math.ceil(products.length / pageSize)
+  const filteredProducts = useMemo(() => {
+    let filtered = products
+    
+    if (search.trim()) {
+      const query = search.toLowerCase().trim()
+      filtered = filtered.filter(p => {
+        const nameMatch = (p.name || "").toLowerCase().includes(query)
+        const skuMatch = (p.sku || "").toLowerCase().includes(query)
+        return nameMatch || skuMatch
+      })
+    }
+    
+    if (filterCategory) {
+      filtered = filtered.filter(p => p.category?.name === filterCategory)
+    }
+    
+    if (filterSupplier) {
+      filtered = filtered.filter(p => p.supplier?.name === filterSupplier)
+    }
+    
+    if (filterStock) {
+      if (filterStock === "low") {
+        filtered = filtered.filter(p => p.stock <= p.minStock)
+      } else if (filterStock === "normal") {
+        filtered = filtered.filter(p => p.stock > p.minStock)
+      } else if (filterStock === "out") {
+        filtered = filtered.filter(p => p.stock === 0)
+      }
+    }
+    
+    return filtered
+  }, [products, search, filterCategory, filterSupplier, filterStock])
+
+  const totalPages = Math.ceil(filteredProducts.length / pageSize)
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * pageSize
-    return products.slice(start, start + pageSize)
-  }, [products, currentPage])
+    return filteredProducts.slice(start, start + pageSize)
+  }, [filteredProducts, currentPage])
 
   return (
-    <div className="rounded-none border border-border bg-card/30 overflow-hidden">
+    <div className="space-y-4">
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-2 p-3 border border-border bg-card/30 rounded-none">
+        <input 
+          type="text"
+          placeholder="BUSCAR POR NOMBRE O SKU..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-8 px-2 text-xs uppercase bg-background border border-border rounded-none w-48"
+        />
+        <select 
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="h-8 px-2 text-xs uppercase bg-background border border-border rounded-none"
+        >
+          <option value="">TODAS LAS CATEGORÍAS</option>
+          {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+        </select>
+        <select 
+          value={filterSupplier}
+          onChange={(e) => setFilterSupplier(e.target.value)}
+          className="h-8 px-2 text-xs uppercase bg-background border border-border rounded-none"
+        >
+          <option value="">TODOS LOS PROVEEDORES</option>
+          {suppliers.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+        </select>
+        <select 
+          value={filterStock}
+          onChange={(e) => setFilterStock(e.target.value)}
+          className="h-8 px-2 text-xs uppercase bg-background border border-border rounded-none"
+        >
+          <option value="">CUALQUIER STOCK</option>
+          <option value="low">STOCK BAJO</option>
+          <option value="normal">STOCK OK</option>
+          <option value="out">AGOTADO</option>
+        </select>
+        <button 
+          onClick={() => { setSearch(""); setFilterCategory(""); setFilterSupplier(""); setFilterStock("") }}
+          className="h-8 px-2 text-xs uppercase bg-destructive/10 border border-destructive/30 text-destructive rounded-none hover:bg-destructive/20"
+        >
+          LIMPIAR
+        </button>
+        <span className="ml-auto text-xs text-muted-foreground uppercase">
+          {filteredProducts.length} RESULTADOS
+        </span>
+      </div>
+
+      <div className="rounded-none border border-border bg-card/30 overflow-hidden">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-muted/50">
@@ -124,6 +208,7 @@ export function ProductsClient({ products: initialProducts, storeId, categories,
         </Table>
       </div>
       <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+    </div>
     </div>
   )
 }

@@ -42,7 +42,8 @@ export default async function POSPage() {
       price: true,
       stock: true,
       categoryId: true,
-      category: { select: { name: true } }
+      category: { select: { name: true } },
+      taxRate: true
     },
     orderBy: { name: 'asc' }
   })

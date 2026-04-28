@@ -24,7 +24,11 @@ import {
   Unlock
 } from "lucide-react"
 
-type CartItem = Product & { quantity: number }
+type CartItem = Product & { 
+  quantity: number
+  basePrice: number
+  taxAmount: number 
+}
 
 export function POSClient({ products, storeId, customers, categories, currentShift, registers: initialRegisters = [] }: { 
   products: Product[], 
@@ -50,7 +54,7 @@ export function POSClient({ products, storeId, customers, categories, currentShi
   const [showTicket, setShowTicket] = useState(false)
   const [lastSale, setLastSale] = useState<{
     id: string
-    items: { name: string; quantity: number; price: number }[]
+    items: { name: string; quantity: number; price: number; basePrice: number; taxAmount: number }[]
     total: number
   } | null>(null)
   const [customerSearch, setCustomerSearch] = useState("")
@@ -144,15 +148,20 @@ export function POSClient({ products, storeId, customers, categories, currentShi
 
   const filteredProducts = useMemo(() => {
     let filtered = products
-    if (selectedCategory !== "TODOS") {
-      filtered = filtered.filter(p => p.categoryId === selectedCategory || (selectedCategory.startsWith("↳ ") && !p.categoryId))
+    
+    if (selectedCategory && selectedCategory !== "TODOS") {
+      filtered = filtered.filter(p => p.categoryId === selectedCategory)
     }
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        p => p.name.toLowerCase().includes(lowerQuery) || (p.sku && p.sku.toLowerCase().includes(lowerQuery))
-      )
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      filtered = filtered.filter(p => {
+        const nameMatch = (p.name || "").toLowerCase().includes(query)
+        const skuMatch = (p.sku || "").toLowerCase().includes(query)
+        return nameMatch || skuMatch
+      })
     }
+    
     return filtered
   }, [products, searchQuery, selectedCategory])
 
@@ -166,9 +175,12 @@ export function POSClient({ products, storeId, customers, categories, currentShi
     setProductsPage(1)
   }, [searchQuery, selectedCategory])
 
-  const subtotal = useMemo(() => cart.reduce((total, item) => total + (item.price * item.quantity), 0), [cart])
-  const iva = subtotal * 0.19
-  const total = subtotal + iva
+  const subtotal = useMemo(() => cart.reduce((total, item) => total + (item.basePrice * item.quantity), 0), [cart])
+  const taxAmount = useMemo(() => cart.reduce((total, item) => total + item.taxAmount, 0), [cart])
+  const total = subtotal + taxAmount
+  
+  const totalPaid = Object.values(amounts).reduce((sum, val) => sum + val, 0)
+  const cambio = totalPaid - total
 
   const handleOpenShift = async () => {
     try {
@@ -198,6 +210,13 @@ export function POSClient({ products, storeId, customers, categories, currentShi
       alert.error("AGOTADO")
       return
     }
+    const basePrice = product.price
+    const taxRate = Number(product.taxRate || 0)
+    const taxAmount = Math.round(basePrice * (taxRate / 100))
+    const unitPrice = basePrice + taxAmount
+    
+    console.log("DEBUG:", { name: product.name, basePrice, taxRate, taxAmount, unitPrice })
+    
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id)
       if (existing) {
@@ -205,9 +224,15 @@ export function POSClient({ products, storeId, customers, categories, currentShi
           alert.warning("STOCK INSUFICIENTE")
           return prev
         }
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)
+        const newQty = existing.quantity + 1
+        return prev.map(item => item.id === product.id ? { 
+          ...item, 
+          quantity: newQty,
+          price: unitPrice * newQty,
+          taxAmount: taxAmount * newQty
+        } : item)
       }
-      return [...prev, { ...product, quantity: 1 }]
+      return [...prev, { ...product, price: unitPrice, basePrice, taxAmount, quantity: 1 }]
     })
     setSearchQuery("")
   }
@@ -220,7 +245,15 @@ export function POSClient({ products, storeId, customers, categories, currentShi
           alert.warning("MAXIMO STOCK ALCANZADO")
           return item
         }
-        return { ...item, quantity: newQty }
+        const taxRate = item.taxRate || 0
+        const unitTax = item.basePrice * (taxRate / 100)
+        const unitPrice = item.basePrice + unitTax
+        return { 
+          ...item, 
+          quantity: newQty,
+          price: unitPrice * newQty,
+          taxAmount: unitTax * newQty
+        }
       }
       return item
     }).filter(item => item.quantity > 0))
@@ -283,7 +316,9 @@ export function POSClient({ products, storeId, customers, categories, currentShi
         items: cart.map(item => ({
           name: item.name,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
+          basePrice: item.basePrice * item.quantity,
+          taxAmount: item.taxAmount
         })),
         total: total
       })
@@ -421,7 +456,9 @@ setShowTicket(true)
               </div>
               <div>
                 <p className="text-[12px] font-bold text-center line-clamp-2 leading-tight">{product.name}</p>
-                <p className="text-[14px] font-black text-center text-primary">${product.price.toLocaleString()}</p>
+                <p className="text-[14px] font-black text-center text-primary">
+                  ${(product.price * (1 + (product.taxRate || 0) / 100)).toLocaleString()}
+                </p>
               </div>
             </div>
           ))}
@@ -435,7 +472,7 @@ setShowTicket(true)
         )}
       </div>
 
-      <div className="w-[320px] sticky top-0 flex flex-col bg-card border-l border-border h-auto overflow-y-auto">
+      <div className="w-[320px] sticky top-0 flex flex-col bg-card border-l border-border h-[738px] overflow-y-auto">
         <div className="p-3 border-b border-border/50">
           <div className="flex items-center gap-2">
             <div className="flex-1">
@@ -504,7 +541,7 @@ setShowTicket(true)
                   <button onClick={() => updateQuantity(item.id, 1)} className="hover:text-primary w-6 h-6 flex items-center justify-center border border-border text-xs font-bold">+</button>
                 </div>
                 <p className="text-[10px] font-black text-primary w-16 text-right">
-                  ${(item.price * item.quantity).toLocaleString()}
+                  ${item.price.toLocaleString()}
                 </p>
                 <button onClick={() => removeFromCart(item.id)} className="text-muted-foreground hover:text-destructive">
                   <X className="w-4 h-4" />
@@ -556,18 +593,23 @@ setShowTicket(true)
             </div>
           )}
 
+          {cambio > 0 && (
+            <div className="bg-primary/10 border border-primary/30 p-2 rounded-none">
+              <div className="flex justify-between text-sm font-bold text-primary uppercase">
+                <span>CAMBIO:</span>
+                <span>${cambio.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1 border-t border-border/50 pt-2 mb-3">
             <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>SUBTOTAL:</span>
               <span>${subtotal.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>IVA (19%):</span>
-              <span>${iva.toLocaleString()}</span>
-            </div>
             <div className="flex justify-between text-lg font-black text-primary">
               <span>TOTAL:</span>
-              <span>${total.toLocaleString()}</span>
+              <span className="text-primary">${total.toLocaleString()}</span>
             </div>
           </div>
 
@@ -592,8 +634,8 @@ setShowTicket(true)
         open={showTicket}
         onClose={() => setShowTicket(false)}
         items={lastSale?.items || []}
-        subtotal={subtotal}
-        iva={iva}
+        subtotal={cart.reduce((sum, item) => sum + (item.basePrice * item.quantity), 0)}
+        totalTaxAmount={taxAmount}
         total={total}
         paymentMethod={Array.isArray(paymentMethod) ? paymentMethod.join("+") : paymentMethod}
         customerName={selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : undefined}
