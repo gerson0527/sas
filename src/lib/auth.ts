@@ -2,10 +2,11 @@ import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { getDatabaseHostHint, prisma } from "@/lib/prisma"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   adapter: PrismaAdapter(prisma),
   providers: [
     Google({
@@ -36,6 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
           console.info(`${logPrefix} attempt`, {
             emailSuffix: emailInput.includes("@") ? emailInput.split("@")[1]!.toLowerCase() : "(no-domain)",
+            dbHost: getDatabaseHostHint(),
           })
 
           const user = await prisma.user.findFirst({
@@ -45,7 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           })
 
           if (!user) {
-            console.warn(`${logPrefix} user not found`)
+            console.warn(`${logPrefix} user not found`, { dbHost: getDatabaseHostHint() })
             return null
           }
           if (!user.password) {
@@ -63,7 +65,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           console.info(`${logPrefix} success`, { userId: user.id })
           return user
         } catch (err) {
-          console.error(`${logPrefix} authorize error`, err)
+          console.error(`${logPrefix} authorize error`, { dbHost: getDatabaseHostHint(), err })
           return null
         }
       }
