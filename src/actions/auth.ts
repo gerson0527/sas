@@ -6,16 +6,16 @@ import { signIn } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
 export async function registerUser(formData: FormData) {
-  const email = formData.get("email") as string
+  const email = String(formData.get("email") ?? "").trim().toLowerCase()
   const password = formData.get("password") as string
-  const name = formData.get("name") as string
+  const name = String(formData.get("name") ?? "").trim()
 
   if (!email || !password || !name) {
     throw new Error("Todos los campos son requeridos")
   }
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email }
+  const existingUser = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
   })
 
   if (existingUser) {

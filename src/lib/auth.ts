@@ -29,11 +29,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
 
-          const email = credentials.email as string
-          console.info(`${logPrefix} attempt`, { emailSuffix: email.includes("@") ? email.split("@")[1] : "(no-domain)" })
+          const emailInput = String(credentials.email).trim()
+          if (!emailInput) {
+            console.warn(`${logPrefix} email vacío tras trim`)
+            return null
+          }
+          console.info(`${logPrefix} attempt`, {
+            emailSuffix: emailInput.includes("@") ? emailInput.split("@")[1]!.toLowerCase() : "(no-domain)",
+          })
 
-          const user = await prisma.user.findUnique({
-            where: { email },
+          const user = await prisma.user.findFirst({
+            where: {
+              email: { equals: emailInput, mode: "insensitive" },
+            },
           })
 
           if (!user) {

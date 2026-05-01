@@ -20,7 +20,7 @@ export default function LoginPage() {
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const email = formData.get("email") as string
+    const email = String(formData.get("email") ?? "").trim()
     const password = formData.get("password") as string
 
     try {
@@ -40,7 +40,11 @@ export default function LoginPage() {
         url: res?.url ?? null,
       })
 
-      if (res?.error) {
+      const failed = Boolean(res?.error)
+      if (failed) {
+        console.warn(
+          "[login] signIn fallido: con Auth.js revisa solo `error`; `ok` puede ser true aunque haya CredentialsSignin"
+        )
         alert.error("Correo electrónico o contraseña no válidos")
       } else {
         router.push("/dashboard")
