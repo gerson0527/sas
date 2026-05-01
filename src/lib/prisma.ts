@@ -10,13 +10,19 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
 
-/** Solo para logs de diagnóstico (hostname de Postgres), sin secretos */
-export function getDatabaseHostHint(): string {
+/**
+ * Host y puerto efectivos de `DATABASE_URL` (sin credenciales).
+ * Si ves `db.*.supabase.co:5432` en Vercel, sigues usando la URI directa;
+ * para serverless suele ir el pooler `:6543` y host `*.pooler.supabase.com`.
+ */
+export function getDatabaseUrlTarget(): string {
   const raw = process.env.DATABASE_URL
   if (!raw) return "(DATABASE_URL ausente)"
   try {
     const normalized = /^postgresql:/i.test(raw) ? raw.replace(/^postgresql:/i, "postgres:") : raw
-    return new URL(normalized).hostname
+    const u = new URL(normalized)
+    const port = u.port || "5432"
+    return `${u.hostname}:${port}`
   } catch {
     return "(DATABASE_URL inválida)"
   }
