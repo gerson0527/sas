@@ -24,10 +24,20 @@ export default function LoginPage() {
     const password = formData.get("password") as string
 
     try {
+      console.warn("[login] enviando signIn credentials…", {
+        origin: typeof window !== "undefined" ? window.location.origin : null,
+      })
       const res = await signIn("credentials", {
         redirect: false,
         email,
         password,
+      })
+
+      console.warn("[login] respuesta signIn", {
+        ok: res?.ok,
+        error: res?.error ?? null,
+        status: res?.status,
+        url: res?.url ?? null,
       })
 
       if (res?.error) {
@@ -37,6 +47,7 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch (error) {
+      console.error("[login] excepción en signIn", error)
       alert.error("Algo salió mal")
     } finally {
       setLoading(false)
@@ -137,6 +148,12 @@ export default function LoginPage() {
             <Button type="submit" className="w-full rounded-none h-12 uppercase tracking-widest font-bold bg-primary/10 border border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all" disabled={loading}>
               {loading ? "Autenticando..." : "Inicializar Conexión"}
             </Button>
+            
+            <div className="text-center">
+              <a href="/forgot-password" className="text-[10px] text-muted-foreground hover:text-primary transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
           </form>
         </motion.div>
       </div>
