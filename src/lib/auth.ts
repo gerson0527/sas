@@ -3,7 +3,7 @@ import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import bcrypt from "bcryptjs"
-import { getDatabaseUrlTarget, prisma } from "@/lib/prisma"
+import { getDatabaseConfigSnapshot, getDatabaseUrlTarget, prisma } from "@/lib/prisma"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -35,7 +35,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.warn(`${logPrefix} email vacío tras trim`)
             return null
           }
-          console.info(`${logPrefix} attempt`, {
+          console.warn(`${logPrefix} DATABASE_URL snapshot (sin contraseña)`, getDatabaseConfigSnapshot())
+          console.warn(`${logPrefix} attempt`, {
             emailSuffix: emailInput.includes("@") ? emailInput.split("@")[1]!.toLowerCase() : "(no-domain)",
             dbTarget: getDatabaseUrlTarget(),
           })
